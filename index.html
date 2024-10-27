@@ -1,0 +1,1000 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Consumption Prediction and Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        .dashboard-item h3 {
+            margin-bottom: 15px;
+        }
+        #ml-suggestions {
+            background-color: #000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        #ml-suggestions::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(to bottom, rgba(0, 255, 0, 0.2), transparent);
+        }
+        #ml-suggestions h3 {
+            color: #00ff00;
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+        }
+        #ml-suggestions ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #ml-suggestions li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+        #ml-suggestions li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: #00ff00;
+        }
+        @keyframes blink {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        #ml-suggestions::after {
+            content: '|';
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            animation: blink 1s infinite;
+        }
+        .appliance-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .control-slider {
+            -webkit-appearance: none;
+            width: 100px;
+            height: 25px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            border-radius: 12px;
+        }
+        .control-slider:hover {
+            opacity: 1;
+        }
+        .control-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: var(--slider-color, var(--primary-color));
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        .control-slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: var(--slider-color, var(--primary-color));
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        .power-consumption {
+            min-width: 70px;
+            text-align: right;
+        }
+        .control-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-grow: 1;
+        }
+        #alerts {
+            background-color: #000;
+            color: #ff0000;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        #alerts::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(to bottom, rgba(255, 0, 0, 0.2), transparent);
+        }
+        #alerts h3 {
+            color: #ff0000;
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+        }
+        #alerts ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #alerts li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+        #alerts li::before {
+            content: '!';
+            position: absolute;
+            left: 0;
+            color: #ff0000;
+        }
+        #alerts::after {
+            content: '|';
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: #ff0000;
+            animation: blink 1s infinite;
+        }
+        .dashboard-datetime {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        .faq-question {
+            font-weight: 700;
+            cursor: pointer;
+            padding: 15px;
+            background-color: var(--background-color);
+            transition: background-color 0.3s ease;
+        }
+        .faq-question.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .faq-answer {
+            padding: 15px;
+            display: none;  /* Hide answers by default */
+            background-color: #fff;
+        }
+        .faq-answer.show {
+            display: block;  /* Show answers when they have the 'show' class */
+        }
+        .faq-item {
+            margin-bottom: 10px;
+            border: 1px solid var(--primary-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        :root {
+            --primary-color: #2ecc71;
+            --secondary-color: #27ae60;
+            --background-color: #e8f5e9;
+            --text-color: #333;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: #fff;
+            padding: 10px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+        .logo-img {
+            height: 40px;  /* Adjust this value to fit your logo size */
+            width: auto;
+            filter: brightness(0) invert(1);  /* This makes the logo white */
+            margin-right: 20px;  /* Add some space between logo and nav */
+        }
+        nav {
+            flex-grow: 1;  /* Allow nav to take up remaining space */
+            display: flex;
+            justify-content: flex-end;  /* Align nav items to the right */
+        }
+        nav ul {
+            display: flex;
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+        nav ul li {
+            margin-left: 20px;
+        }
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+        nav ul li a:hover {
+            color: var(--secondary-color);
+        }
+        section {
+            padding: 100px 0;
+        }
+        h1, h2 {
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: #fff;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: var(--primary-color);
+        }
+        #hero {
+            background: linear-gradient(rgba(46, 204, 113, 0.7), rgba(46, 204, 113, 0.7)), url('fabio-sasso-VGTENzkFEos-unsplash.jpg') no-repeat center center/cover;
+            height: 100vh;
+            color: #fff;
+            display: flex;
+            align-items: center;
+        }
+        .hero-content {
+            width: 100%;
+            padding: 0 20px;
+        }
+        .hero-text {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .hero-text h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .hero-text h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.8);  /* Slightly transparent white */
+        }
+        .hero-text p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        /* Remove any additional media queries that were added for responsiveness */
+        #features {
+            background-color: #fff;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+        .feature-item {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--background-color);
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+        .feature-item:hover {
+            transform: translateY(-10px);
+        }
+        #how-it-works {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .step-number {
+            font-size: 24px;
+            font-weight: 700;
+            margin-right: 20px;
+        }
+        #faq {
+            background-color: #fff;
+        }
+        .faq-item {
+            margin-bottom: 20px;
+            border: 1px solid var(--primary-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .faq-question {
+            font-weight: 700;
+            cursor: pointer;
+            padding: 15px;
+            background-color: var(--background-color);
+            transition: background-color 0.3s ease;
+        }
+        .faq-question:hover {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .faq-answer {
+            padding: 15px;
+            display: none;
+        }
+        footer {
+            background-color: var(--primary-color);
+            color: #fff;
+            padding: 20px 0;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .connect-links {
+            display: flex;
+            align-items: center;
+        }
+
+        .connect-links span {
+            margin-right: 10px;
+        }
+
+        .connect-links a {
+            color: #fff;
+            font-size: 1.5em;
+            margin-left: 10px;
+            transition: color 0.3s ease;
+        }
+
+        .connect-links a:hover {
+            color: var(--secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .connect-links {
+                margin-top: 10px;
+            }
+        }
+
+        #dashboard {
+            display: none;
+            padding-top: 80px;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .dashboard-item {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #controls {
+            grid-column: 1 / -1;
+        }
+        .appliance-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .control-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .control-btn.on {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .control-btn.off {
+            background-color: #ccc;
+        }
+        .control-btn.low {
+            background-color: var(--secondary-color);
+            color: #fff;
+        }
+        #connect {
+            background-color: var(--background-color);
+            padding: 50px 0;
+            text-align: center;
+        }
+        #connect h2 {
+            margin-bottom: 20px;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .social-links a {
+            color: var(--primary-color);
+            font-size: 2em;
+            transition: color 0.3s ease;
+        }
+        .social-links a:hover {
+            color: var(--secondary-color);
+        }
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .fade-in.appear {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .logo {
+                margin-bottom: 10px; /* Add some space below the logo on mobile */
+            }
+
+            nav {
+                width: 100%;
+            }
+
+            nav ul {
+                flex-direction: column;
+            }
+
+            nav ul li {
+                margin-left: 0;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mlSuggestions = document.querySelector('.dashboard-item:nth-child(3)');
+            mlSuggestions.id = 'ml-suggestions';
+
+            const suggestions = [
+                "Reduce AC usage during peak hours (2-5 PM) to save energy.",
+                "Consider using natural light in the living room between 10 AM and 2 PM.",
+                "Your water heater usage pattern suggests setting it to run at 6 AM would be more efficient.",
+                "Detected an unusual energy spike from your refrigerator. Consider a maintenance check.",
+                "Based on your routine, scheduling your dishwasher to run at 11 PM could reduce energy costs."
+            ];
+
+            const mlSuggestionsList = mlSuggestions.querySelector('ul');
+            mlSuggestionsList.innerHTML = '';
+            let currentIndex = 0;
+
+            function addSuggestion() {
+                if (currentIndex < suggestions.length) {
+                    const li = document.createElement('li');
+                    li.textContent = suggestions[currentIndex];
+                    mlSuggestionsList.appendChild(li);
+
+                    setTimeout(() => {
+                        li.style.opacity = '1';
+                    }, 100);
+
+                    currentIndex++;
+                    setTimeout(addSuggestion, 2000);
+                }
+            }
+
+            addSuggestion();
+
+            // Replace buttons with sliders for all appliances
+            const applianceControls = document.querySelectorAll('.appliance-control');
+            let totalPower = 0;
+            const totalPowerElement = document.getElementById('total-power');
+
+            applianceControls.forEach(control => {
+                const applianceName = control.querySelector('.appliance-name').textContent;
+                const buttons = control.querySelectorAll('.control-btn');
+                const powerConsumption = control.querySelector('.power-consumption');
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '0';
+                slider.max = '2';
+                slider.value = '0';
+                slider.className = 'control-slider';
+
+                slider.addEventListener('input', function() {
+                    const state = ['off', 'low', 'on'][this.value];
+                    const consumption = parseFloat(buttons[this.value].dataset.consumption);
+                    powerConsumption.textContent = `${consumption} kWh`;
+
+                    // Update slider color based on position
+                    let color;
+                    if (this.value == 0) {
+                        color = '#2ecc71'; // Original green
+                    } else if (this.value == 1) {
+                        color = '#f1c40f'; // Yellow
+                    } else {
+                        color = '#e74c3c'; // Red
+                    }
+                    this.style.setProperty('--slider-color', color);
+
+                    // Update total power consumption
+                    totalPower = calculateTotalPower();
+                    totalPowerElement.textContent = totalPower.toFixed(1);
+                });
+
+                const controlContainer = document.createElement('div');
+                controlContainer.className = 'control-container';
+                controlContainer.appendChild(slider);
+                controlContainer.appendChild(powerConsumption);
+
+                control.innerHTML = '';
+                control.appendChild(document.createElement('span')).textContent = applianceName;
+                control.appendChild(controlContainer);
+
+                // Set initial color to match the primary green
+                slider.style.setProperty('--slider-color', 'var(--primary-color)');
+            });
+
+            function calculateTotalPower() {
+                return Array.from(applianceControls).reduce((total, control) => {
+                    const consumption = parseFloat(control.querySelector('.power-consumption').textContent);
+                    return total + consumption;
+                }, 0);
+            }
+
+            // Initialize total power
+            totalPower = calculateTotalPower();
+            totalPowerElement.textContent = totalPower.toFixed(1);
+
+            // Add similar functionality for alerts
+            const alerts = document.querySelector('.dashboard-item:nth-child(4)');
+            alerts.id = 'alerts';
+
+            const alertMessages = [
+                "High energy consumption detected in the past hour.",
+                "Potential energy leak in the kitchen - please check appliances.",
+                "Scheduled maintenance for smart meter next week.",
+                "Unusual power surge detected from the living room circuit.",
+                "Your monthly energy usage is 15% higher than average."
+            ];
+
+            const alertsList = alerts.querySelector('ul');
+            alertsList.innerHTML = '';
+            let alertIndex = 0;
+
+            function addAlert() {
+                if (alertIndex < alertMessages.length) {
+                    const li = document.createElement('li');
+                    li.textContent = alertMessages[alertIndex];
+                    alertsList.appendChild(li);
+
+                    setTimeout(() => {
+                        li.style.opacity = '1';
+                    }, 100);
+
+                    alertIndex++;
+                    setTimeout(addAlert, 2000);
+                }
+            }
+
+            addAlert();
+
+            // Add date and time update functionality
+            const datetimeElement = document.getElementById('dashboard-datetime');
+
+            function updateDateTime() {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                };
+                datetimeElement.textContent = now.toLocaleDateString('en-US', options);
+            }
+
+            // Update date and time immediately and then every second
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+
+            // FAQ Collapsible
+            const faqQuestions = document.querySelectorAll('.faq-question');
+            
+            faqQuestions.forEach(question => {
+                question.addEventListener('click', function() {
+                    // Toggle the active class on the question
+                    this.classList.toggle('active');
+                    
+                    // Toggle the 'show' class on the answer
+                    const answer = this.nextElementSibling;
+                    answer.classList.toggle('show');
+                    
+                    // Close other open questions
+                    faqQuestions.forEach(q => {
+                        if (q !== this) {
+                            q.classList.remove('active');
+                            q.nextElementSibling.classList.remove('show');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="#hero">
+                        <img src="pngegg.png" alt="Logo" class="logo-img">
+                    </a>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="#hero" class="nav-link">Home</a></li>
+                        <li><a href="#features" class="nav-link">Features</a></li>
+                        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                        <li><a href="#faq" class="nav-link">FAQ</a></li>
+                        <li><a href="#" id="dashboard-link">Dashboard</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero" style="background-image: url('fabio-sasso-VGTENzkFEos-unsplash.jpg'); background-size: cover; background-position: center;">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1>Energy Consumption Prediction and Management System by Kishor</h1>
+                        <p>Intelligent home energy management for a sustainable future</p>
+                        <a href="#features" class="btn">Learn More</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features">
+            <div class="container">
+                <h2>Key Features</h2>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <h3>Real-time Monitoring</h3>
+                        <p>Track your energy consumption in real-time.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>ML-powered Optimization</h3>
+                        <p>Leverage machine learning for efficient energy use.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>Smart Device Integration</h3>
+                        <p>Connect and control all your smart home devices.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>Customizable Alerts</h3>
+                        <p>Set up personalized notifications and alerts.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="how-it-works">
+            <div class="container">
+                <h2>How It Works</h2>
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Install the System</h3>
+                        <p>Set up our easy-to-install hardware and software.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Connect Your Devices</h3>
+                        <p>Link all your smart home devices to the system.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Optimize and Save</h3>
+                        <p>Let our ML optimize your energy usage and start saving.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="faq">
+            <div class="container">
+                <h2>Frequently Asked Questions</h2>
+                <div class="faq-item">
+                    <div class="faq-question">How much can I save on my energy bill?</div>
+                    <div class="faq-answer">Savings vary, but users typically see a 20-30% reduction in energy costs.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Is the system compatible with all home appliances?</div>
+                    <div class="faq-answer">Our system works with most modern smart appliances and can be integrated with many older appliances using smart plugs.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">How secure is my data?</div>
+                    <div class="faq-answer">We use industry-standard encryption and security protocols to ensure your data is always protected.</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="dashboard">
+            <div class="container">
+                <h2>Energy Management Dashboard</h2>
+                <div id="dashboard-datetime" class="dashboard-datetime"></div>
+                <div class="dashboard-total-power">Total Power Consumption: <span id="total-power">0</span> kWh</div>
+                <div class="dashboard-grid">
+                    <div class="dashboard-item" id="controls">
+                        <h3>Appliance Controls</h3>
+                        <div class="appliance-control">
+                            <span class="appliance-name">Living Room Lights</span>
+                            <div class="control-buttons">
+                                <button class="control-btn off" data-appliance="living-room-lights" data-state="off" data-consumption="0.1">Off</button>
+                                <button class="control-btn low" data-appliance="living-room-lights" data-state="low" data-consumption="0.05">Low</button>
+                                <button class="control-btn on" data-appliance="living-room-lights" data-state="on" data-consumption="0.1">On</button>
+                            </div>
+                            <span class="power-consumption">0.1 kWh</span>
+                        </div>
+                        <div class="appliance-control">
+                            <span class="appliance-name">Air Conditioner</span>
+                            <div class="control-buttons">
+                                <button class="control-btn off" data-appliance="air-conditioner" data-state="off" data-consumption="0">Off</button>
+                                <button class="control-btn low" data-appliance="air-conditioner" data-state="low" data-consumption="1.5">Low</button>
+                                <button class="control-btn on" data-appliance="air-conditioner" data-state="on" data-consumption="2.5">On</button>
+                            </div>
+                            <span class="power-consumption">2.5 kWh</span>
+                        </div>
+                        <div class="appliance-control">
+                            <span class="appliance-name">Water Heater</span>
+                            <div class="control-buttons">
+                                <button class="control-btn off" data-appliance="water-heater" data-state="off" data-consumption="0">Off</button>
+                                <button class="control-btn low" data-appliance="water-heater" data-state="low" data-consumption="1.0">Low</button>
+                                <button class="control-btn on" data-appliance="water-heater" data-state="on" data-consumption="1.8">On</button>
+                            </div>
+                            <span class="power-consumption">1.8 kWh</span>
+                        </div>
+                        <div class="appliance-control">
+                            <span class="appliance-name">Refrigerator</span>
+                            <div class="control-buttons">
+                                <button class="control-btn off" data-appliance="refrigerator" data-state="off" data-consumption="0">Off</button>
+                                <button class="control-btn low" data-appliance="refrigerator" data-state="low" data-consumption="0.5">Low</button>
+                                <button class="control-btn on" data-appliance="refrigerator" data-state="on" data-consumption="0.8">On</button>
+                            </div>
+                            <span class="power-consumption">0.8 kWh</span>
+                        </div>
+                        <div class="appliance-control">
+                            <span class="appliance-name">Washing Machine</span>
+                            <div class="control-buttons">
+                                <button class="control-btn off" data-appliance="washing-machine" data-state="off" data-consumption="0">Off</button>
+                                <button class="control-btn low" data-appliance="washing-machine" data-state="low" data-consumption="0.8">Low</button>
+                                <button class="control-btn on" data-appliance="washing-machine" data-state="on" data-consumption="1.2">On</button>
+                            </div>
+                            <span class="power-consumption">1.2 kWh</span>
+                        </div>
+                        <div class="appliance-control">
+                            <span class="appliance-name">Dishwasher</span>
+                            <div class="control-buttons">
+                                <button class="control-btn off" data-appliance="dishwasher" data-state="off" data-consumption="0">Off</button>
+                                <button class="control-btn low" data-appliance="dishwasher" data-state="low" data-consumption="1.0">Low</button>
+                                <button class="control-btn on" data-appliance="dishwasher" data-state="on" data-consumption="1.5">On</button>
+                            </div>
+                            <span class="power-consumption">1.5 kWh</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-item">
+                        <h3>Energy Consumption Graph</h3>
+                        <canvas id="energyChart"></canvas>
+                    </div>
+                    <div class="dashboard-item">
+                        <h3>ML Suggestions</h3>
+                        <ul>
+                            <li>Reduce AC usage during peak hours (2-5 PM) to save energy.</li>
+                            <li>Consider using natural light in the living room between 10 AM and 2 PM.</li>
+                            <li>Your water heater usage pattern suggests setting it to run at 6 AM would be more efficient.</li>
+                        </ul>
+                    </div>
+                    <div class="dashboard-item">
+                        <h3>Alerts</h3>
+                        <ul>
+                            <li>High energy consumption detected in the past hour.</li>
+                            <li>Potential energy leak in the kitchen - please check appliances.</li>
+                            <li>Scheduled maintenance for smart meter next week.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2023 Kishor Selvakumar. All rights reserved.</p>
+                <div class="connect-links">
+                    <span>Connect with Me:</span>
+                    <a href="https://www.linkedin.com/in/kishor-selvakumar-626qa" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-linkedin"></i>
+                    </a>
+                    <a href="mailto:kishorselvakumar04@gmail.com">
+                        <i class="fas fa-envelope"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // FAQ Collapsible
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const answer = question.nextElementSibling;
+                answer.style.display = answer.style.display === 'block' ? 'none' : 'block';
+            });
+        });
+
+        // Dashboard Toggle
+        const dashboardLink = document.getElementById('dashboard-link');
+        const dashboardSection = document.getElementById('dashboard');
+        const mainSections = document.querySelectorAll('main > section:not(#dashboard)');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        dashboardLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleDashboard(true);
+        });
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                toggleDashboard(false);
+            });
+        });
+
+        function toggleDashboard(show) {
+            if (show) {
+                dashboardSection.style.display = 'block';
+                mainSections.forEach(section => section.style.display = 'none');
+            } else {
+                dashboardSection.style.display = 'none';
+                mainSections.forEach(section => section.style.display = 'block');
+            }
+        }
+
+        // Appliance Controls
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const appliance = btn.dataset.appliance;
+                const state = btn.dataset.state;
+                const buttons = btn.parentElement.querySelectorAll('.control-btn');
+                
+                buttons.forEach(b => b.classList.remove('on', 'low'));
+                btn.classList.add(state);
+
+                // Here you would typically send a request to your backend to update the appliance state
+                console.log(`${appliance} set to ${state}`);
+            });
+        });
+
+        // Energy Consumption Chart
+        const ctx = document.getElementById('energyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'],
+                datasets: [
+                    {
+                        label: 'Total Consumption',
+                        data: [3, 2, 4, 6, 5, 7, 8, 5],
+                        borderColor: 'rgb(46, 204, 113)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Air Conditioner',
+                        data: [1, 0.5, 1, 2, 1.5, 3, 2.5, 1],
+                        borderColor: 'rgb(52, 152, 219)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Lighting',
+                        data: [0.5, 0.3, 0.2, 0.5, 0.7, 1, 1.5, 1.2],
+                        borderColor: 'rgb(241, 196, 15)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Appliances',
+                        data: [1.5, 1.2, 2.8, 3.5, 2.8, 3, 4, 2.8],
+                        borderColor: 'rgb(231, 76, 60)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Energy Consumption (kWh)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
